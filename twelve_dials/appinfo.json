@@ -1,0 +1,17 @@
+{
+  "uuid": "0292e057-d46b-4499-9ebd-d759c6ff2080",
+  "shortName": "12 Dials",
+  "longName": "Twelve Dials",
+  "companyName": "Alastair Tse",
+  "versionCode": 1,
+  "versionLabel": "1.0.0",
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}

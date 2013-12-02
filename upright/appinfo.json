@@ -1,0 +1,68 @@
+{
+  "uuid": "06053ad4-124c-4a4e-aabe-3094af1793b8",
+  "shortName": "upright",
+  "longName": "upright",
+  "companyName": "MakeAwesomeHappen",
+  "versionCode": 1,
+  "versionLabel": "1.0.0",
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": [
+      {
+        "type": "png",
+        "name": "DIGIT_0",
+        "file": "0.png"
+      },
+      {
+        "type": "png",
+        "name": "DIGIT_1",
+        "file": "1.png"
+      },
+      {
+        "type": "png",
+        "name": "DIGIT_2",
+        "file": "2.png"
+      },
+      {
+        "type": "png",
+        "name": "DIGIT_3",
+        "file": "3.png"
+      },
+      {
+        "type": "png",
+        "name": "DIGIT_4",
+        "file": "4.png"
+      },
+      {
+        "type": "png",
+        "name": "DIGIT_5",
+        "file": "5.png"
+      },
+      {
+        "type": "png",
+        "name": "DIGIT_6",
+        "file": "6.png"
+      },
+      {
+        "type": "png",
+        "name": "DIGIT_7",
+        "file": "7.png"
+      },
+      {
+        "type": "png",
+        "name": "DIGIT_8",
+        "file": "8.png"
+      },
+      {
+        "type": "png",
+        "name": "DIGIT_9",
+        "file": "9.png"
+      }
+    ]
+  }
+}

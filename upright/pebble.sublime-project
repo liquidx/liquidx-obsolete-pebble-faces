@@ -1,0 +1,22 @@
+{
+  "folders":
+  [
+    {
+      "path": ".",
+      "folder_exclude_patterns": ["build"]
+    }
+  ],
+  "build_systems":
+  [
+      {
+          "name": "Pebble Build",
+          "working_dir": "${project_path:${folder:${file_path}}}",
+          "cmd": ["pebble", "build"]
+      },
+      {
+          "name": "Pebble Deploy",
+          "working_dir": "${project_path:${folder:${file_path}}}",
+          "cmd": ["pebble", "install", "--phone", "192.168.1.2"]
+      }
+  ]
+}

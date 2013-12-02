@@ -1,28 +1,23 @@
 #include <pebble.h>
 
+// Black on white.
+// #define BACKGROUND_COLOR GColorWhite
+// #define FOREGROUND_COLOR GColorBlack
+
+// White on black.
+#define BACKGROUND_COLOR GColorBlack
+#define FOREGROUND_COLOR GColorWhite
+
+
 static Window *window;
 static Layer *canvas_layer;
 int16_t current_hour;
 int16_t current_minute;
 
-// Lookup table for minute to x-value
+// Lookup table from 0-59 minutes for the x-y offset
+// from the 0-minute position on a square. It's very rough.
 // for i in range(0, 15):
 //     math.tan((float(i) * 6)/180.0 * 3.1416) * 18
-// 0.0
-// 1.8918806913214514
-// 3.826027324049155
-// 5.848569151780266
-// 8.014137461991712
-// 10.392334231074862
-// 13.077805911677284
-// 16.207328667302942
-// 19.991104025086436
-// 24.77498939253651
-// 31.177090850832574
-// 40.428955016319165
-// 55.398857588930746
-// 84.68466758882202
-// 171.2642082385304
 static const int16_t minute_offset_x_y[120] = {
   0, 0,
 
@@ -115,7 +110,7 @@ static const int16_t minute_offset_x_y[120] = {
 static void canvas_layer_draw(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
 
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, BACKGROUND_COLOR);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   // Get time
@@ -144,14 +139,14 @@ static void canvas_layer_draw(Layer *layer, GContext *ctx) {
 
         int dialHour = row * kCols + col;
         if (dialHour < hour) {
-          graphics_context_set_fill_color(ctx, GColorWhite);
+          graphics_context_set_fill_color(ctx, FOREGROUND_COLOR);
           graphics_fill_circle(ctx, dialCenter, radius);
-          graphics_context_set_stroke_color(ctx, GColorWhite);
+          graphics_context_set_stroke_color(ctx, FOREGROUND_COLOR);
           graphics_draw_circle(ctx, dialCenter, radius);
         } else if (dialHour == hour) {
           // Fill circle with white.
           if (minute > 0) {
-            graphics_context_set_fill_color(ctx, GColorWhite);
+            graphics_context_set_fill_color(ctx, FOREGROUND_COLOR);
             graphics_fill_circle(ctx, dialCenter, radius);
           }
 
@@ -193,17 +188,17 @@ static void canvas_layer_draw(Layer *layer, GContext *ctx) {
           // Clip filled area
           GPath *clock_erase_path_ref = NULL;
           clock_erase_path_ref = gpath_create(&clock_erase_path);
-          graphics_context_set_fill_color(ctx, GColorBlack);
+          graphics_context_set_fill_color(ctx, BACKGROUND_COLOR);
           gpath_draw_filled(ctx, clock_erase_path_ref);
           gpath_destroy(clock_erase_path_ref);
 
           // Draw stroke outline.
-          graphics_context_set_stroke_color(ctx, GColorWhite);
+          graphics_context_set_stroke_color(ctx, FOREGROUND_COLOR);
           graphics_draw_circle(ctx, dialCenter, radius);
         } else {
-          graphics_context_set_fill_color(ctx, GColorBlack);
+          graphics_context_set_fill_color(ctx, BACKGROUND_COLOR);
           graphics_fill_circle(ctx, dialCenter, radius);
-          graphics_context_set_stroke_color(ctx, GColorWhite);
+          graphics_context_set_stroke_color(ctx, FOREGROUND_COLOR);
           graphics_draw_circle(ctx, dialCenter, radius);
         }
     }

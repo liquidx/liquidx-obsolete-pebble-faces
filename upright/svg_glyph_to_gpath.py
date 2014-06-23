@@ -70,11 +70,17 @@ class Point:
   def floor(self):
     return Point(math.floor(self.x), math.floor(self.y))
 
+  def is_integral_equal(self, other):
+    return (int(self.x) == int(other.x) and int(self.y) == int(other.y))
+
   def __str__(self):
     return '{%f.1, %f.1}' % (self.x, self.y)
 
   def __eq__(self, other):
     return self.x - other.x < 0.1 and self.y - other.y < 0.1
+
+  def __ne__(self, other):
+    return self.x - other.x > 0.1 and self.y - other.y > 0.1
 
 
 def get_next_path_command(path):
@@ -234,14 +240,15 @@ def alt_quad_bezier(start, control, end, n = 10):
   x1, y1 = control.x, control.y
   x2, y2 = end.x, end.y
   for i in range(n+1):
-    t = i / n
+    t = i / float(n)
     a = (1. - t)**2
-    b = 3. * t * (1. - t)
+    b = 2. * t * (1. - t)
     c = t**2
 
     x = int(a * x0 + b * x1 + c * x2)
     y = int(a * y0 + b * y1 + c * y2)
     points.append(Point(x, y))
+
   return points
 
 
@@ -311,7 +318,7 @@ def convert_path_to_gpath(path, name):
     scaled_path = [Point(p.x / SCALE_REDUCTION, (GLYPH_HEIGHT - p.y) / SCALE_REDUCTION) for p in path]
     uniq_scaled_path = [scaled_path[0]]
     for i in range(1, len(scaled_path) - 1):
-      if not (uniq_scaled_path[-1].x == scaled_path[i].x and uniq_scaled_path[-1].y == scaled_path[i].y):
+      if not uniq_scaled_path[-1].is_integral_equal(scaled_path[i]):
         uniq_scaled_path.append(scaled_path[i])
 
     print 'static const GPathInfo %s = {\n ' % name

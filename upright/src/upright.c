@@ -1,12 +1,29 @@
 #include <pebble.h>
-#include "upright_font.h"
 
 static Window *window;
 static Layer *circle_layer;
 static Layer *time_layer;
 
-int16_t current_hour;
-int16_t current_minute;
+static GBitmap *digits[10] = {
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL
+};
+
+static int16_t current_hour = 0;
+static int16_t current_minute = 0;
+
+#define DRAW_WITH_IMAGES 1
+#if !DRAW_WITH_IMAGES
+#include "upright_font.h"
+#endif
 
 // drawing
 
@@ -30,17 +47,32 @@ static void time_layer_draw(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
   graphics_context_set_fill_color(ctx, GColorWhite);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+  graphics_context_set_fill_color(ctx, GColorBlack);
 
-  GBitmap *digit = NULL;
+#if DRAW_WITH_IMAGES
+  int8_t digit_1 = current_hour / 10;
+  int8_t digit_2 = current_hour % 10;
+  int8_t digit_3 = current_minute / 10;
+  int8_t digit_4 = current_minute % 10;
+
+  GRect digit_bounds = digits[0]->bounds;
+  graphics_draw_bitmap_in_rect(ctx, digits[digit_1], digit_bounds);
+
+  digit_bounds.origin.x += 24;
+  graphics_draw_bitmap_in_rect(ctx, digits[digit_2], digit_bounds);
+
+  digit_bounds.origin.x += 24;
+  graphics_draw_bitmap_in_rect(ctx, digits[digit_3], digit_bounds);
+
+  digit_bounds.origin.x += 24;
+  graphics_draw_bitmap_in_rect(ctx, digits[digit_4], digit_bounds);
+#else
   GPath *digit_path_ref = NULL;
 
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  // 1st
   digit_path_ref = gpath_create(&DIGIT_GLYPH_3);
   gpath_draw_filled(ctx, digit_path_ref);
   gpath_destroy(digit_path_ref);
-
-  // 1st
-  //graphics_draw_bitmap_in_rect(ctx, digit, digit_bounds);
 
   // 2nd
   digit_path_ref = gpath_create(&DIGIT_GLYPH_1);
@@ -48,22 +80,8 @@ static void time_layer_draw(Layer *layer, GContext *ctx) {
   gpath_draw_filled(ctx, digit_path_ref);
   gpath_destroy(digit_path_ref);
 
+#endif
 
-  // digit_bounds.origin.x += 24;
-  // graphics_draw_bitmap_in_rect(ctx, digit, digit_bounds);
-
-  // 3rd
-  digit = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_1);
-  GRect digit_bounds = digit->bounds;
-  digit_bounds.origin.x += 48;
-  graphics_draw_bitmap_in_rect(ctx, digit, digit_bounds);
-  gbitmap_destroy(digit);
-
-  // 4th
-  digit_bounds.origin.x += 24;
-  digit = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_3);
-  graphics_draw_bitmap_in_rect(ctx, digit, digit_bounds);
-  gbitmap_destroy(digit);
 
 }
 
@@ -107,10 +125,33 @@ static void window_load(Window *window) {
   layer_set_update_proc(time_layer, time_layer_draw);
 
   tick_timer_service_subscribe(MINUTE_UNIT | HOUR_UNIT, handle_minute_tick);
+
+  digits[0] = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_0);
+  digits[1] = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_1);
+  digits[2] = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_2);
+  digits[3] = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_3);
+  digits[4] = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_4);
+  digits[5] = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_5);
+  digits[6] = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_6);
+  digits[7] = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_7);
+  digits[8] = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_8);
+  digits[9] = gbitmap_create_with_resource(RESOURCE_ID_DIGIT_9);
+
 }
 
 static void window_unload(Window *window) {
   layer_destroy(circle_layer);
+  layer_destroy(time_layer);
+  gbitmap_destroy(digits[0]);
+  gbitmap_destroy(digits[1]);
+  gbitmap_destroy(digits[2]);
+  gbitmap_destroy(digits[3]);
+  gbitmap_destroy(digits[4]);
+  gbitmap_destroy(digits[5]);
+  gbitmap_destroy(digits[6]);
+  gbitmap_destroy(digits[7]);
+  gbitmap_destroy(digits[8]);
+  gbitmap_destroy(digits[9]);
 }
 
 static void init(void) {

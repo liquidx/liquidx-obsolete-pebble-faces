@@ -1,0 +1,17 @@
+{
+  "uuid": "a7c8f6ac-891d-4ca9-9616-90141441c98e",
+  "shortName": "Battery Meter",
+  "longName": "Battery Meter",
+  "companyName": "Alastair Tse",
+  "versionCode": 1,
+  "versionLabel": "1.0.0",
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}

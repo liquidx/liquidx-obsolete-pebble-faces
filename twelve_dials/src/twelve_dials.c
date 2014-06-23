@@ -8,11 +8,20 @@
 #define BACKGROUND_COLOR GColorBlack
 #define FOREGROUND_COLOR GColorWhite
 
+#define ANIMATE_DIALS 0
+#define DEBUG 0
 
 static Window *window;
 static Layer *canvas_layer;
 static Layer *dial_layers[12];
+static GPoint clear_dial_path_points[7];
+static GPathInfo clear_dial_path_info;
+static GPath *clear_dial_path = NULL;
+
 static PropertyAnimation *dial_animations[12];
+
+static TextLayer *debug_text_layer;
+static char debug_text[64];
 
 int16_t current_hour;
 int16_t current_minute;
@@ -108,18 +117,101 @@ static const int16_t minute_offset_x_y[120] = {
   -2, 0
 };
 
+// Canvas (3x4 in 144x168)
+// static GSize dialSize = {32, 32};
+// static int16_t dialRadius = 16;
+// static GPoint faceMargin = {14, 8};
+// static GPoint dialSeparator = {10, 8};
 
+// Larger
+static GSize dialSize = {36, 36};
+static int16_t dialRadius = 18;
+static GPoint faceMargin = {10, 3};
+static GPoint dialSeparator = {8, 6};
 
-// canvas
-
-static  GSize dialSize = {36, 36};
-static  int16_t dialRadius = 18;
-static  GPoint dialPadding = {14, 6};
-static  GPoint dialSeparator = {6, 4};
 
 typedef struct _DialData {
   int16_t hour;
 } DialData;
+
+
+//
+static void update_minute_dial_path(int16_t minute) {
+  GPoint dialCenter = { dialRadius, dialRadius };
+
+  // Partial hour dial.
+  GPoint dial0 = { dialCenter.x, dialCenter.y - dialRadius };
+  GPoint dial30 = { dialCenter.x, dialCenter.y + dialRadius };
+  GPoint dial_tr = {dialCenter.x + dialRadius, dialCenter.y - dialRadius};
+  GPoint dial_br = {dialCenter.x + dialRadius, dialCenter.y + dialRadius};
+  GPoint dial_bl = {dialCenter.x - dialRadius, dialCenter.y + dialRadius};
+  GPoint dial_tl = {dialCenter.x - dialRadius, dialCenter.y - dialRadius};
+
+  int16_t minute_x = dial0.x + minute_offset_x_y[minute * 2];
+  int16_t minute_y = dial0.y + minute_offset_x_y[minute * 2 + 1];
+  GPoint minutePoint = {minute_x, minute_y};
+
+  int16_t num_points = 6;
+  if (minute < 13) {
+    num_points = 7;
+    clear_dial_path_points[0] = dial0;
+    clear_dial_path_points[1] = dialCenter;
+    clear_dial_path_points[2] = minutePoint;
+    clear_dial_path_points[3] = dial_tr;
+    clear_dial_path_points[4] = dial_br;
+    clear_dial_path_points[5] = dial_bl;
+    clear_dial_path_points[6] = dial_tl;
+  } else if (minute >= 13 && minute < 23) {
+    num_points = 6;
+    clear_dial_path_points[0] = dial0;
+    clear_dial_path_points[1] = dialCenter;
+    clear_dial_path_points[2] = minutePoint;
+    clear_dial_path_points[3] = dial_br;
+    clear_dial_path_points[4] = dial_bl;
+    clear_dial_path_points[5] = dial_tl;
+  } else if (minute >= 23 && minute < 37) {
+    num_points = 5;
+    clear_dial_path_points[0] = dial0;
+    clear_dial_path_points[1] = dialCenter;
+    clear_dial_path_points[2] = minutePoint;
+    clear_dial_path_points[3] = dial_bl;
+    clear_dial_path_points[4] = dial_tl;
+  } else if (minute >= 38 && minute < 52) {
+    num_points = 4;
+    clear_dial_path_points[0] = dial0;
+    clear_dial_path_points[1] = dialCenter;
+    clear_dial_path_points[2] = minutePoint;
+    clear_dial_path_points[3] = dial_tl;
+  } else if (minute >= 52) {
+    num_points = 3;
+    clear_dial_path_points[0] = dial0;
+    clear_dial_path_points[1] = dialCenter;
+    clear_dial_path_points[2] = minutePoint;
+  }
+
+  // if (minute < 30) {
+  //   num_points = 5;
+  //   clear_dial_path_points[0] = dial0;
+  //   clear_dial_path_points[1] = dial_tr;
+  //   clear_dial_path_points[2] = minutePoint;
+  //   clear_dial_path_points[3] = dialCenter;
+  //   clear_dial_path_points[4] = dial0;
+  // } else {
+  //   num_points = 5;
+  //   clear_dial_path_points[0] = dial0;
+  //   clear_dial_path_points[1] = dialCenter;
+  //   clear_dial_path_points[2] = minutePoint;
+  //   clear_dial_path_points[3] = dial_tl;
+  //   clear_dial_path_points[4] = dial0;
+  // }
+
+  clear_dial_path_info.num_points = num_points;
+  clear_dial_path_info.points = clear_dial_path_points;
+  if (clear_dial_path) {
+    gpath_destroy(clear_dial_path);
+  }
+  clear_dial_path = gpath_create(&clear_dial_path_info);
+}
 
 static void dial_canvas_layer_draw(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
@@ -146,64 +238,26 @@ static void dial_canvas_layer_draw(Layer *layer, GContext *ctx) {
     graphics_context_set_stroke_color(ctx, FOREGROUND_COLOR);
     graphics_draw_circle(ctx, dialCenter, dialRadius);
   } else {
-    // Partial hour dial.
-    GPoint dial0 = { dialCenter.x, dialCenter.y - dialRadius };
-    GPoint dial_tr = {dialCenter.x + dialRadius, dialCenter.y - dialRadius};
-    GPoint dial_br = {dialCenter.x + dialRadius, dialCenter.y + dialRadius};
-    GPoint dial_bl = {dialCenter.x - dialRadius, dialCenter.y + dialRadius};
-    GPoint dial_tl = {dialCenter.x - dialRadius, dialCenter.y - dialRadius};
+    graphics_context_set_fill_color(ctx, FOREGROUND_COLOR);
+    graphics_fill_circle(ctx, dialCenter, dialRadius);
 
-    // Fill circle with white.
-    if (minute > 0) {
-      graphics_context_set_fill_color(ctx, FOREGROUND_COLOR);
-      graphics_fill_circle(ctx, dialCenter, dialRadius);
+    if (clear_dial_path) {
+      graphics_context_set_fill_color(ctx, BACKGROUND_COLOR);
+      gpath_draw_filled(ctx, clear_dial_path);
     }
 
-    // White out the non-filled out part of the circle.
-    GPathInfo clock_erase_path = {
-      .num_points = 7,
-      .points = (GPoint[]) {dial0, dialCenter, dial0, dial0, dial0, dial0, dial0}
-    };
-    int16_t minute_x = dial0.x + minute_offset_x_y[minute * 2];
-    int16_t minute_y = dial0.y + minute_offset_x_y[minute * 2 + 1];
-    GPoint minutePoint = {minute_x, minute_y};
-
-    if (minute > 0 && minute < 8) {
-      clock_erase_path.points[2] = minutePoint;
-      //
-      clock_erase_path.points[3] = dial_tr;
-      clock_erase_path.points[4] = dial_br;
-      clock_erase_path.points[5] = dial_bl;
-      clock_erase_path.points[6] = dial_tl;
-
-    } else if (minute >= 8 && minute < 23) {
-      clock_erase_path.points[2] = minutePoint;
-      clock_erase_path.points[3] = dial_br;
-      clock_erase_path.points[4] = dial_bl;
-      clock_erase_path.points[5] = dial_tl;
-
-    } else if (minute >= 23 && minute < 38) {
-      clock_erase_path.points[2] = minutePoint;
-      clock_erase_path.points[3] = dial_bl;
-      clock_erase_path.points[4] = dial_tl;
-
-    } else if (minute >= 38 && minute < 53) {
-      clock_erase_path.points[2] = minutePoint;
-      clock_erase_path.points[3] = dial_tl;
-    } else if (minute >= 53) {
-      clock_erase_path.points[2] = minutePoint;
-    }
-
-    // Clip filled area
-    GPath *clock_erase_path_ref = NULL;
-    clock_erase_path_ref = gpath_create(&clock_erase_path);
-    graphics_context_set_fill_color(ctx, BACKGROUND_COLOR);
-    gpath_draw_filled(ctx, clock_erase_path_ref);
-    gpath_destroy(clock_erase_path_ref);
-
-    // Draw stroke outline.
     graphics_context_set_stroke_color(ctx, FOREGROUND_COLOR);
     graphics_draw_circle(ctx, dialCenter, dialRadius);
+
+#if DEBUG
+    memset(debug_text, 0, 64);
+    snprintf(debug_text, 64, "%d:%d", hour, minute);
+    text_layer_set_text(debug_text_layer, debug_text);
+    // Draw stroke outline for debugging
+    //graphics_context_set_stroke_color(ctx, FOREGROUND_COLOR);
+    //graphics_draw_circle(ctx, dialCenter, dialRadius / 2);
+#endif  // DBEUG
+
   }
 
 }
@@ -230,12 +284,14 @@ static void dial_animation_stopped(Animation *animation, bool finished, void *da
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   current_hour = tick_time->tm_hour;
   current_minute = tick_time->tm_min;
+  update_minute_dial_path(current_minute);
 
   // Mark all dials for redrawing.
   layer_mark_dirty(canvas_layer);
   for (int index = 0; index < 12; index++) {
     layer_mark_dirty(dial_layers[index]);
 
+#if ANIMATE_DIALS
     // set up animation
     GRect end_frame = layer_get_frame(dial_layers[index]);
     GRect start_frame = end_frame;
@@ -253,6 +309,7 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
     animation_set_delay(animation, index * 10);
     animation_schedule(animation);
     dial_animations[index] = (PropertyAnimation *)animation;
+#endif  // ANIMATE_DIALS
   }
 
 
@@ -271,14 +328,27 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, canvas_layer);
   layer_set_update_proc(canvas_layer, canvas_layer_draw);
 
+#if DEBUG
+  int16_t debug_text_height = 24;
+  debug_text_layer = text_layer_create(
+    (GRect){
+      //.origin = {0, bounds.size.h - debug_text_height},
+      .origin = {0, 0},
+      .size = {bounds.size.w, debug_text_height}
+    });
+  GFont *font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+  text_layer_set_font(debug_text_layer, font);
+  layer_add_child(window_layer, (Layer *)debug_text_layer);
+#endif  // DEBUG
+
   const int kRows = 4;
   const int kCols = 3;
   for (int row = 0; row < kRows; row++) {
     for (int col = 0; col < kCols; col++) {
       GRect dial_rect =  {
         .origin = {
-          dialPadding.x + col * (dialSize.w + dialSeparator.x),
-          dialPadding.y + row * (dialSize.h + dialSeparator.y)
+          faceMargin.x + col * (dialSize.w + dialSeparator.x),
+          faceMargin.y + row * (dialSize.h + dialSeparator.y)
         },
         .size = {
           dialRadius * 2 + 2,
@@ -303,6 +373,12 @@ static void window_load(Window *window) {
 static void window_unload(Window *window) {
   layer_destroy(canvas_layer);
   tick_timer_service_unsubscribe();
+  if (clear_dial_path) {
+    gpath_destroy(clear_dial_path);
+  }
+  for (int i = 0; i < 12; i++) {
+    layer_destroy(dial_layers[i]);
+  }
 }
 
 static void init(void) {
